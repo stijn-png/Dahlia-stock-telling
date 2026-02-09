@@ -212,7 +212,7 @@
     .res-row.res-notcounted { opacity: 0.4; }
     .res-naam { flex: 1; font-size: 13px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .res-nums { display: flex; gap: 2px; flex-shrink: 0; }
-    .res-cell { width: 48px; text-align: center; font-size: 13px; }
+    .res-cell { width: 40px; text-align: center; font-size: 12px; }
     .res-hdr { font-size: 10px; font-weight: 700; color: #888; }
     .res-bold { font-weight: 700; }
     .res-ok { color: #2e7d32; font-weight: 700; }
@@ -521,6 +521,8 @@ function renderResult(data) {
     rows += '<div class="res-row' + (notCounted ? ' res-notcounted' : '') + '" onclick="openItem(' + d.id + ')">' +
       '<div class="res-naam">' + esc(d.naam) + '</div>' +
       '<div class="res-nums">' +
+        '<span class="res-cell">' + (d.start_stock || '–') + '</span>' +
+        '<span class="res-cell">' + (d.aantal_per_bak || '–') + '</span>' +
         '<span class="res-cell">' + verwacht + '</span>' +
         '<span class="res-cell res-bold">' + (geteld || '–') + '</span>' +
         '<span class="res-cell ' + vClass + '">' + (notCounted ? '–' : vTxt) + '</span>' +
@@ -541,6 +543,8 @@ function renderResult(data) {
   h += '<div class="res-header">' +
     '<div class="res-naam">Naam</div>' +
     '<div class="res-nums">' +
+      '<span class="res-cell res-hdr">Stock</span>' +
+      '<span class="res-cell res-hdr">/bak</span>' +
       '<span class="res-cell res-hdr">Verw.</span>' +
       '<span class="res-cell res-hdr">Geteld</span>' +
       '<span class="res-cell res-hdr">Versch.</span>' +
