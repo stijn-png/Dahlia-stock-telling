@@ -175,6 +175,24 @@
     .stock-cell .p { font-size: 11px; color: #999; }
     .no-stock { color: #bbb; font-style: italic; font-size: 13px; }
 
+    .res-filter {
+      display: flex;
+      gap: 6px;
+      margin: 6px 0 2px;
+    }
+    .res-filter-btn {
+      padding: 6px 14px;
+      border: 1px solid #ddd;
+      border-radius: 99px;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      color: #888;
+      cursor: pointer;
+    }
+    .res-filter-btn:active { background: #f0f0f0; }
+    .res-filter-btn.active { background: #333; color: #fff; border-color: #333; }
+
     .res-summary {
       background: #fff;
       border: 1px solid #eaeaea;
@@ -218,6 +236,76 @@
     .res-ok { color: #2e7d32; font-weight: 700; }
     .res-plus { color: #1565c0; font-weight: 700; }
     .res-min { color: #d32f2f; font-weight: 700; }
+
+    .edit-field {
+      padding: 12px 18px;
+      border-top: 1px solid #eee;
+    }
+    .edit-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #999;
+      margin-bottom: 6px;
+    }
+    .edit-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      background: #f9f9f9;
+    }
+    .edit-input:focus { border-color: #999; background: #fff; }
+    .edit-hint {
+      font-size: 11px;
+      color: #bbb;
+      margin-top: 3px;
+    }
+    .edit-row {
+      display: flex;
+      gap: 8px;
+    }
+    .edit-row .edit-group { flex: 1; }
+    .edit-group { margin-bottom: 0; }
+
+    .direct-input-section {
+      padding: 12px 18px;
+      border-top: 1px solid #eee;
+    }
+    .direct-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .direct-input {
+      width: 80px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+      background: #f9f9f9;
+    }
+    .direct-input:focus { border-color: #999; background: #fff; }
+    .direct-label { font-size: 13px; color: #666; }
+    .direct-save {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #2e7d32;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .direct-save:active { opacity: 0.8; }
 
     .opmerking-section { padding: 12px 18px; border-top: 1px solid #eee; }
     .opmerking-textarea {
@@ -315,20 +403,50 @@
       <div class="p-naam" id="pNaam"></div>
       <div class="p-tags" id="pTags"></div>
     </div>
+
+    <!-- Direct aantal instellen -->
+    <div class="direct-input-section">
+      <div class="edit-label">Aantal bakken geteld</div>
+      <div class="direct-row">
+        <input type="number" class="direct-input" id="directGeteld" min="0" inputmode="numeric">
+        <div class="direct-label">bakken<br><span style="font-size:11px;color:#bbb" id="directSaved"></span></div>
+        <button class="direct-save" onclick="saveDirectGeteld()">Stel in</button>
+      </div>
+    </div>
+
+    <!-- Locatie bewerken -->
+    <div class="edit-field">
+      <div class="edit-label">Plaats (DAHL code)</div>
+      <input type="text" class="edit-input" id="editPlaats" placeholder="bv. DAHL001">
+    </div>
+
+    <div class="edit-field">
+      <div class="edit-label">Stock Locaties</div>
+      <input type="text" class="edit-input" id="editStockLoc" placeholder="bv. STOCK 25 pos 3 + STOCK 26 pos 1+2">
+      <div class="edit-hint">Formaat: STOCK [rij] pos [posities] (+ voor meerdere)</div>
+    </div>
+
+    <!-- Stock grid preview -->
     <div class="p-section">
-      <div class="p-section-title">Stock Locaties</div>
+      <div class="p-section-title">Stock Locaties Preview</div>
       <div id="pGrid"></div>
     </div>
+
     <div class="opmerking-section">
       <div class="p-section-title">Opmerking</div>
       <textarea class="opmerking-textarea" id="opmerkingText" placeholder="Typ een opmerking..."></textarea>
-      <div class="opmerking-saved" id="opmerkingSaved"></div>
     </div>
+
+    <!-- Alles opslaan -->
+    <div style="padding: 12px 18px; border-top: 1px solid #eee;">
+      <button class="a-btn a-save" style="width:100%" id="saveAllBtn" onclick="saveAll()">💾 Alles Opslaan</button>
+    </div>
+
+    <!-- Teller sectie -->
     <div class="teller">
       <div class="t-display">
-        <div class="t-label">Bakken geteld (deze sessie)</div>
+        <div class="t-label">Snel tellen (sessie +/-)</div>
         <div class="t-num" id="tNum">0</div>
-        <div class="t-saved" id="tSaved"></div>
       </div>
       <div class="t-btns">
         <div class="t-btn neg" onclick="adj(-10)">-10</div>
@@ -340,7 +458,7 @@
       </div>
       <div class="actions">
         <button class="a-btn a-reset" onclick="resetCnt()">Reset</button>
-        <button class="a-btn a-save" id="saveBtn" onclick="saveCnt()">Opslaan</button>
+        <button class="a-btn a-save" id="saveBtn" onclick="saveCnt()">+ Voeg toe aan geteld</button>
       </div>
     </div>
   </div>
@@ -501,6 +619,8 @@ function renderNaam(data) {
   document.getElementById('naam').innerHTML = h;
 }
 
+let resFilter = 'all';
+
 function renderResult(data) {
   const sorted = [...data].sort((a, b) => a.naam.localeCompare(b.naam));
   let totaalGeteld = 0, totaalVerwacht = 0, totaalVerschil = 0;
@@ -517,6 +637,8 @@ function renderResult(data) {
     const vClass = verschil === 0 ? 'res-ok' : verschil > 0 ? 'res-plus' : 'res-min';
     const vTxt = verschil > 0 ? '+' + verschil : verschil === 0 ? '✓' : verschil;
     const notCounted = geteld === 0;
+
+    if (resFilter === 'diff' && (notCounted || verschil === 0)) return;
 
     rows += '<div class="res-row' + (notCounted ? ' res-notcounted' : '') + '" onclick="openItem(' + d.id + ')">' +
       '<div class="res-naam">' + esc(d.naam) + '</div>' +
@@ -540,6 +662,11 @@ function renderResult(data) {
     '<div class="res-summary-row"><span>Verschil</span><strong class="' + totVClass + '">' + (totaalVerschil > 0 ? '+' : '') + totaalVerschil + '</strong></div>' +
   '</div>';
 
+  h += '<div class="res-filter">' +
+    '<div class="res-filter-btn' + (resFilter === 'all' ? ' active' : '') + '" onclick="setResFilter(\'all\')">Alles</div>' +
+    '<div class="res-filter-btn' + (resFilter === 'diff' ? ' active' : '') + '" onclick="setResFilter(\'diff\')">Alleen verschil</div>' +
+  '</div>';
+
   h += '<div class="res-header">' +
     '<div class="res-naam">Naam</div>' +
     '<div class="res-nums">' +
@@ -555,6 +682,11 @@ function renderResult(data) {
   document.getElementById('result').innerHTML = h;
 }
 
+function setResFilter(f) {
+  resFilter = f;
+  render(allData);
+}
+
 function openItem(id) {
   cur = allData.find(d => d.id === id);
   if (!cur) return;
@@ -562,14 +694,35 @@ function openItem(id) {
 
   document.getElementById('pNaam').textContent = cur.naam;
   document.getElementById('pTags').innerHTML =
-    '<span class="p-tag g">' + cur.plaats + '</span>' +
     '<span class="p-tag">' + cur.aantal_bakken + ' bakken</span>' +
-    '<span class="p-tag">' + cur.aantal_per_bak + '/bak</span>';
+    '<span class="p-tag">' + cur.aantal_per_bak + '/bak</span>' +
+    '<span class="p-tag">Stock: ' + (cur.start_stock || '?') + '</span>';
 
+  // Direct geteld input
+  document.getElementById('directGeteld').value = cur.geteld || 0;
+  document.getElementById('directSaved').textContent = 'verwacht: ' + (cur.aantal_bakken || 0);
+
+  // Bewerkbare velden
+  document.getElementById('editPlaats').value = cur.plaats || '';
+  document.getElementById('editStockLoc').value = cur.stock_locaties || '';
+
+  // Stock grid preview
+  updateStockGrid();
+
+  // Opmerking laden
+  document.getElementById('opmerkingText').value = cur.opmerking || '';
+
+  updTeller();
+  document.getElementById('overlay').classList.add('show');
+}
+
+function updateStockGrid() {
+  const val = document.getElementById('editStockLoc').value;
+  const locs = parseLoc(val);
   let sg = '';
-  if (cur.locaties.length) {
+  if (locs.length) {
     sg = '<div class="stock-grid">';
-    cur.locaties.forEach(l => {
+    locs.forEach(l => {
       sg += '<div class="stock-cell"><div class="r">Rij ' + l.rij + '</div><div class="p">Positie ' + l.pos + '</div></div>';
     });
     sg += '</div>';
@@ -577,14 +730,10 @@ function openItem(id) {
     sg = '<div class="no-stock">Geen stock locatie</div>';
   }
   document.getElementById('pGrid').innerHTML = sg;
-
-  // Opmerking laden
-  document.getElementById('opmerkingText').value = cur.opmerking || '';
-  document.getElementById('opmerkingSaved').textContent = '';
-
-  updTeller();
-  document.getElementById('overlay').classList.add('show');
 }
+
+// Live preview stock locaties
+document.getElementById('editStockLoc').addEventListener('input', updateStockGrid);
 
 function closePanel() {
   document.getElementById('overlay').classList.remove('show');
@@ -603,52 +752,106 @@ function resetCnt() {
 
 function updTeller() {
   document.getElementById('tNum').textContent = sessCnt;
-  const s = cur ? cur.geteld : 0;
-  document.getElementById('tSaved').textContent = s
-    ? 'In database: ' + s : 'Nog niets opgeslagen';
+}
+
+async function saveDirectGeteld() {
+  if (!cur) return;
+  var val = parseInt(document.getElementById('directGeteld').value) || 0;
+  if (val < 0) val = 0;
+
+  const { error } = await db.from('dahlias').update({ geteld: val }).eq('id', cur.id);
+  if (error) { toast('❌ ' + error.message); return; }
+
+  // Log verschil
+  var diff = val - (cur.geteld || 0);
+  if (diff !== 0) {
+    await db.from('tellingen').insert({ dahlia_id: cur.id, aantal: diff });
+  }
+
+  cur.geteld = val;
+  render(allData);
+  toast('✅ Geteld ingesteld op ' + val);
+}
+
+async function saveAll() {
+  if (!cur) return;
+  var btn = document.getElementById('saveAllBtn');
+  btn.textContent = 'Opslaan...';
+  btn.disabled = true;
+
+  var newPlaats = document.getElementById('editPlaats').value.trim();
+  var newStockLoc = document.getElementById('editStockLoc').value.trim();
+  var newOpmerking = document.getElementById('opmerkingText').value.trim();
+  var newGeteld = parseInt(document.getElementById('directGeteld').value) || 0;
+  if (newGeteld < 0) newGeteld = 0;
+
+  var newLocs = parseLoc(newStockLoc);
+
+  var updates = {
+    plaats: newPlaats || null,
+    stock_locaties: newStockLoc || null,
+    aantal_stock_locaties: newLocs.length,
+    opmerking: newOpmerking || null,
+    geteld: newGeteld
+  };
+
+  const { error } = await db.from('dahlias').update(updates).eq('id', cur.id);
+  if (error) {
+    btn.textContent = '💾 Alles Opslaan';
+    btn.disabled = false;
+    toast('❌ ' + error.message);
+    return;
+  }
+
+  // Log als geteld veranderd
+  var diff = newGeteld - (cur.geteld || 0);
+  if (diff !== 0) {
+    await db.from('tellingen').insert({ dahlia_id: cur.id, aantal: diff });
+  }
+
+  // Update lokaal
+  cur.plaats = newPlaats || null;
+  cur.stock_locaties = newStockLoc || null;
+  cur.aantal_stock_locaties = newLocs.length;
+  cur.locaties = newLocs;
+  cur.opmerking = newOpmerking || null;
+  cur.geteld = newGeteld;
+
+  render(allData);
+  btn.textContent = '💾 Alles Opslaan';
+  btn.disabled = false;
+  toast('✅ Alles opgeslagen!');
 }
 
 async function saveCnt() {
-  if (!cur || sessCnt === 0) { toast('Niets om op te slaan'); return; }
+  if (!cur || sessCnt === 0) { toast('Niets om toe te voegen'); return; }
 
   var btn = document.getElementById('saveBtn');
-  btn.textContent = 'Opslaan...';
+  btn.textContent = 'Bezig...';
   btn.disabled = true;
 
   var newTotal = (cur.geteld || 0) + sessCnt;
 
-  const { error: updErr } = await db
-    .from('dahlias')
-    .update({ geteld: newTotal })
-    .eq('id', cur.id);
-
-  if (updErr) {
-    btn.textContent = 'Opslaan';
+  const { error } = await db.from('dahlias').update({ geteld: newTotal }).eq('id', cur.id);
+  if (error) {
+    btn.textContent = '+ Voeg toe aan geteld';
     btn.disabled = false;
-    toast('❌ ' + updErr.message);
+    toast('❌ ' + error.message);
     return;
   }
 
-  await db.from('tellingen').insert({
-    dahlia_id: cur.id,
-    aantal: sessCnt
-  });
+  await db.from('tellingen').insert({ dahlia_id: cur.id, aantal: sessCnt });
 
-  // Opmerking opslaan indien ingevuld
-  var opmTxt = document.getElementById('opmerkingText').value.trim();
-  if (opmTxt !== (cur.opmerking || '')) {
-    await db.from('dahlias').update({ opmerking: opmTxt || null }).eq('id', cur.id);
-    cur.opmerking = opmTxt || null;
-  }
-
+  var added = sessCnt;
   cur.geteld = newTotal;
+  document.getElementById('directGeteld').value = newTotal;
   sessCnt = 0;
   updTeller();
   render(allData);
 
-  btn.textContent = 'Opslaan';
+  btn.textContent = '+ Voeg toe aan geteld';
   btn.disabled = false;
-  toast('✅ Opgeslagen! Totaal: ' + newTotal);
+  toast('✅ +' + added + ' → Totaal: ' + newTotal);
 }
 
 document.getElementById('search').addEventListener('input', e => {
