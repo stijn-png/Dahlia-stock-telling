@@ -263,7 +263,7 @@
 const SUPABASE_URL = 'https://flxoqsmvfoqredrsqcqx.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZseG9xc212Zm9xcmVkcnNxY3F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2MjM0NDIsImV4cCI6MjA4NjE5OTQ0Mn0.AAVdIL1IsXfDeycRsOzpSQweJ9L0FpGtpYaXVd8Vo04';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let allData = [];
 let cur = null;
@@ -273,7 +273,7 @@ let sessCnt = 0;
 // LOAD DATA
 // =============================================
 async function load() {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('dahlias')
     .select('*')
     .order('naam');
@@ -454,7 +454,7 @@ async function saveCnt() {
   const newTotal = (cur.geteld || 0) + sessCnt;
 
   // Update dahlias tabel
-  const { error: updErr } = await supabase
+  const { error: updErr } = await db
     .from('dahlias')
     .update({ geteld: newTotal })
     .eq('id', cur.id);
@@ -467,7 +467,7 @@ async function saveCnt() {
   }
 
   // Log in tellingen tabel
-  await supabase.from('tellingen').insert({
+  await db.from('tellingen').insert({
     dahlia_id: cur.id,
     aantal: sessCnt
   });
