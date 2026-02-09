@@ -145,6 +145,21 @@
 
     .handle { width: 30px; height: 4px; background: #ddd; border-radius: 2px; margin: 8px auto; }
 
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      width: 32px; height: 32px;
+      border: none; background: #f0f0f0;
+      border-radius: 50%;
+      font-size: 18px; color: #666;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .close-btn:active { background: #ddd; }
+
+    .p-panel-top { position: relative; }
+
     .p-head { padding: 4px 18px 14px; border-bottom: 1px solid #eee; }
     .p-naam { font-size: 18px; font-weight: 700; }
     .p-tags { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
@@ -159,6 +174,22 @@
     .stock-cell .r { font-weight: 700; font-size: 14px; }
     .stock-cell .p { font-size: 11px; color: #999; }
     .no-stock { color: #bbb; font-style: italic; font-size: 13px; }
+
+    .opmerking-section { padding: 12px 18px; border-top: 1px solid #eee; }
+    .opmerking-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 60px;
+      outline: none;
+      background: #f9f9f9;
+    }
+    .opmerking-textarea:focus { border-color: #999; background: #fff; }
+    .opmerking-saved { font-size: 11px; color: #999; margin-top: 4px; }
 
     .teller { padding: 16px 18px; border-top: 1px solid #eee; }
     .t-display { text-align: center; margin-bottom: 12px; }
@@ -229,7 +260,10 @@
 
 <div class="overlay" id="overlay" onclick="if(event.target===this)closePanel()">
   <div class="panel">
-    <div class="handle"></div>
+    <div class="p-panel-top">
+      <div class="handle"></div>
+      <button class="close-btn" onclick="closePanel()">✕</button>
+    </div>
     <div class="p-head">
       <div class="p-naam" id="pNaam"></div>
       <div class="p-tags" id="pTags"></div>
@@ -237,6 +271,11 @@
     <div class="p-section">
       <div class="p-section-title">Stock Locaties</div>
       <div id="pGrid"></div>
+    </div>
+    <div class="opmerking-section">
+      <div class="p-section-title">Opmerking</div>
+      <textarea class="opmerking-textarea" id="opmerkingText" placeholder="Typ een opmerking..."></textarea>
+      <div class="opmerking-saved" id="opmerkingSaved"></div>
     </div>
     <div class="teller">
       <div class="t-display">
@@ -437,6 +476,10 @@ function openItem(id) {
   }
   document.getElementById('pGrid').innerHTML = sg;
 
+  // Opmerking laden
+  document.getElementById('opmerkingText').value = cur.opmerking || '';
+  document.getElementById('opmerkingSaved').textContent = '';
+
   updTeller();
   document.getElementById('overlay').classList.add('show');
 }
@@ -488,6 +531,13 @@ async function saveCnt() {
     dahlia_id: cur.id,
     aantal: sessCnt
   });
+
+  // Opmerking opslaan indien ingevuld
+  var opmTxt = document.getElementById('opmerkingText').value.trim();
+  if (opmTxt !== (cur.opmerking || '')) {
+    await db.from('dahlias').update({ opmerking: opmTxt || null }).eq('id', cur.id);
+    cur.opmerking = opmTxt || null;
+  }
 
   cur.geteld = newTotal;
   sessCnt = 0;
