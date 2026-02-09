@@ -175,6 +175,50 @@
     .stock-cell .p { font-size: 11px; color: #999; }
     .no-stock { color: #bbb; font-style: italic; font-size: 13px; }
 
+    .res-summary {
+      background: #fff;
+      border: 1px solid #eaeaea;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 6px 0;
+    }
+    .res-summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 13px;
+    }
+    .res-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 10px 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .res-row {
+      display: flex;
+      align-items: center;
+      padding: 9px 10px;
+      background: #fff;
+      border: 1px solid #eaeaea;
+      border-radius: 8px;
+      margin: 2px 0;
+      cursor: pointer;
+    }
+    .res-row:active { background: #f5f5f5; }
+    .res-row.res-notcounted { opacity: 0.4; }
+    .res-naam { flex: 1; font-size: 13px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .res-nums { display: flex; gap: 2px; flex-shrink: 0; }
+    .res-cell { width: 48px; text-align: center; font-size: 13px; }
+    .res-hdr { font-size: 10px; font-weight: 700; color: #888; }
+    .res-bold { font-weight: 700; }
+    .res-ok { color: #2e7d32; font-weight: 700; }
+    .res-plus { color: #1565c0; font-weight: 700; }
+    .res-min { color: #d32f2f; font-weight: 700; }
+
     .opmerking-section { padding: 12px 18px; border-top: 1px solid #eee; }
     .opmerking-textarea {
       width: 100%;
@@ -250,6 +294,7 @@
 <div class="tabs">
   <div class="tab active" onclick="switchTab('loc')">Plaatsen & Stock</div>
   <div class="tab" onclick="switchTab('naam')">Op Naam</div>
+  <div class="tab" onclick="switchTab('result')">Resultaat</div>
 </div>
 
 <div id="loc" class="view active">
@@ -257,6 +302,8 @@
 </div>
 
 <div id="naam" class="view"></div>
+
+<div id="result" class="view"></div>
 
 <div class="overlay" id="overlay" onclick="if(event.target===this)closePanel()">
   <div class="panel">
@@ -350,6 +397,7 @@ function parseLoc(str) {
 function render(data) {
   renderLoc(data);
   renderNaam(data);
+  renderResult(data);
 }
 
 function renderLoc(data) {
@@ -451,6 +499,56 @@ function renderNaam(data) {
     '</div>';
   });
   document.getElementById('naam').innerHTML = h;
+}
+
+function renderResult(data) {
+  const sorted = [...data].sort((a, b) => a.naam.localeCompare(b.naam));
+  let totaalGeteld = 0, totaalVerwacht = 0, totaalVerschil = 0;
+  let rows = '';
+
+  sorted.forEach(d => {
+    const verwacht = d.aantal_bakken || 0;
+    const geteld = d.geteld || 0;
+    const verschil = geteld - verwacht;
+    totaalGeteld += geteld;
+    totaalVerwacht += verwacht;
+    totaalVerschil += verschil;
+
+    const vClass = verschil === 0 ? 'res-ok' : verschil > 0 ? 'res-plus' : 'res-min';
+    const vTxt = verschil > 0 ? '+' + verschil : verschil === 0 ? '✓' : verschil;
+    const notCounted = geteld === 0;
+
+    rows += '<div class="res-row' + (notCounted ? ' res-notcounted' : '') + '" onclick="openItem(' + d.id + ')">' +
+      '<div class="res-naam">' + esc(d.naam) + '</div>' +
+      '<div class="res-nums">' +
+        '<span class="res-cell">' + verwacht + '</span>' +
+        '<span class="res-cell res-bold">' + (geteld || '–') + '</span>' +
+        '<span class="res-cell ' + vClass + '">' + (notCounted ? '–' : vTxt) + '</span>' +
+      '</div>' +
+    '</div>';
+  });
+
+  const totVClass = totaalVerschil === 0 ? 'res-ok' : totaalVerschil > 0 ? 'res-plus' : 'res-min';
+  const counted = sorted.filter(d => (d.geteld || 0) > 0).length;
+
+  let h = '<div class="res-summary">' +
+    '<div class="res-summary-row"><span>Geteld</span><strong>' + counted + ' / ' + sorted.length + '</strong></div>' +
+    '<div class="res-summary-row"><span>Totaal bakken verwacht</span><strong>' + totaalVerwacht + '</strong></div>' +
+    '<div class="res-summary-row"><span>Totaal bakken geteld</span><strong>' + totaalGeteld + '</strong></div>' +
+    '<div class="res-summary-row"><span>Verschil</span><strong class="' + totVClass + '">' + (totaalVerschil > 0 ? '+' : '') + totaalVerschil + '</strong></div>' +
+  '</div>';
+
+  h += '<div class="res-header">' +
+    '<div class="res-naam">Naam</div>' +
+    '<div class="res-nums">' +
+      '<span class="res-cell res-hdr">Verw.</span>' +
+      '<span class="res-cell res-hdr">Geteld</span>' +
+      '<span class="res-cell res-hdr">Versch.</span>' +
+    '</div>' +
+  '</div>';
+
+  h += rows;
+  document.getElementById('result').innerHTML = h;
 }
 
 function openItem(id) {
@@ -562,7 +660,8 @@ document.getElementById('search').addEventListener('input', e => {
 
 function switchTab(id) {
   document.querySelectorAll('.tab').forEach((t, i) => {
-    t.classList.toggle('active', i === (id === 'loc' ? 0 : 1));
+    const idx = id === 'loc' ? 0 : id === 'naam' ? 1 : 2;
+    t.classList.toggle('active', i === idx);
   });
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(id).classList.add('active');
