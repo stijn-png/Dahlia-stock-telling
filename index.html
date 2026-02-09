@@ -414,10 +414,18 @@
       </div>
     </div>
 
-    <!-- Locatie bewerken -->
+    <!-- Locatie en bakken bewerken -->
     <div class="edit-field">
-      <div class="edit-label">Plaats (DAHL code)</div>
-      <input type="text" class="edit-input" id="editPlaats" placeholder="bv. DAHL001">
+      <div class="edit-row">
+        <div class="edit-group">
+          <div class="edit-label">Plaats (DAHL code)</div>
+          <input type="text" class="edit-input" id="editPlaats" placeholder="bv. DAHL001">
+        </div>
+        <div class="edit-group">
+          <div class="edit-label">Verwacht bakken</div>
+          <input type="number" class="edit-input" id="editBakken" min="0" inputmode="numeric">
+        </div>
+      </div>
     </div>
 
     <div class="edit-field">
@@ -704,6 +712,7 @@ function openItem(id) {
 
   // Bewerkbare velden
   document.getElementById('editPlaats').value = cur.plaats || '';
+  document.getElementById('editBakken').value = cur.aantal_bakken || 0;
   document.getElementById('editStockLoc').value = cur.stock_locaties || '';
 
   // Stock grid preview
@@ -787,10 +796,14 @@ async function saveAll() {
 
   var newLocs = parseLoc(newStockLoc);
 
+  var newBakken = parseInt(document.getElementById('editBakken').value) || 0;
+  if (newBakken < 0) newBakken = 0;
+
   var updates = {
     plaats: newPlaats || null,
     stock_locaties: newStockLoc || null,
     aantal_stock_locaties: newLocs.length,
+    aantal_bakken: newBakken,
     opmerking: newOpmerking || null,
     geteld: newGeteld
   };
@@ -814,6 +827,7 @@ async function saveAll() {
   cur.stock_locaties = newStockLoc || null;
   cur.aantal_stock_locaties = newLocs.length;
   cur.locaties = newLocs;
+  cur.aantal_bakken = newBakken;
   cur.opmerking = newOpmerking || null;
   cur.geteld = newGeteld;
 
