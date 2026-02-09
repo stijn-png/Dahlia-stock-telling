@@ -16,7 +16,6 @@
       min-height: 100dvh;
     }
 
-    /* HEADER */
     .header {
       background: #fff;
       padding: 14px 16px;
@@ -37,7 +36,6 @@
     }
     #search:focus { border-color: #999; background: #fff; }
 
-    /* TABS */
     .tabs {
       display: flex;
       background: #fff;
@@ -59,9 +57,19 @@
     }
     .tab.active { color: #333; border-bottom-color: #333; }
 
-    /* LIST */
     .view { display: none; padding: 6px 8px; }
     .view.active { display: block; }
+
+    .section-hdr {
+      font-size: 13px;
+      font-weight: 800;
+      color: #333;
+      padding: 16px 10px 4px;
+      border-bottom: 2px solid #333;
+      margin-bottom: 4px;
+      margin-top: 8px;
+    }
+    .section-hdr:first-child { margin-top: 0; }
 
     .group-hdr {
       font-size: 11px;
@@ -103,6 +111,7 @@
       line-height: 1.2;
     }
     .badge.green { background: #e8f5e9; color: #2e7d32; }
+    .badge.stock { background: #fff3e0; color: #e65100; }
     .badge.grey { background: #eee; color: #aaa; }
 
     .cell { flex: 1; margin-left: 10px; min-width: 0; }
@@ -112,7 +121,6 @@
     .cell-count { font-weight: 700; font-size: 15px; min-width: 28px; text-align: right; color: #2e7d32; }
     .cell-count.zero { color: #ddd; font-weight: 400; }
 
-    /* OVERLAY */
     .overlay {
       display: none;
       position: fixed;
@@ -152,7 +160,6 @@
     .stock-cell .p { font-size: 11px; color: #999; }
     .no-stock { color: #bbb; font-style: italic; font-size: 13px; }
 
-    /* TELLER */
     .teller { padding: 16px 18px; border-top: 1px solid #eee; }
     .t-display { text-align: center; margin-bottom: 12px; }
     .t-label { font-size: 12px; color: #999; }
@@ -182,7 +189,6 @@
     .a-save { background: #333; color: #fff; }
     .a-reset { background: #eee; color: #666; flex: 0.4; }
 
-    /* TOAST */
     .toast {
       position: fixed; bottom: 24px; left: 50%;
       transform: translateX(-50%) translateY(80px);
@@ -211,7 +217,7 @@
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('loc')">Stock Locaties</div>
+  <div class="tab active" onclick="switchTab('loc')">Plaatsen & Stock</div>
   <div class="tab" onclick="switchTab('naam')">Op Naam</div>
 </div>
 
@@ -257,9 +263,6 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// =============================================
-// CONFIG - vul je Supabase anon key in
-// =============================================
 const SUPABASE_URL = 'https://flxoqsmvfoqredrsqcqx.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZseG9xc212Zm9xcmVkcnNxY3F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2MjM0NDIsImV4cCI6MjA4NjE5OTQ0Mn0.AAVdIL1IsXfDeycRsOzpSQweJ9L0FpGtpYaXVd8Vo04';
 
@@ -269,9 +272,6 @@ let allData = [];
 let cur = null;
 let sessCnt = 0;
 
-// =============================================
-// LOAD DATA
-// =============================================
 async function load() {
   const { data, error } = await db
     .from('dahlias')
@@ -283,7 +283,6 @@ async function load() {
     return;
   }
 
-  // Parse stock locaties
   allData = data.map(d => ({
     ...d,
     locaties: parseLoc(d.stock_locaties)
@@ -309,16 +308,42 @@ function parseLoc(str) {
   return result;
 }
 
-// =============================================
-// RENDER
-// =============================================
 function render(data) {
   renderLoc(data);
   renderNaam(data);
 }
 
 function renderLoc(data) {
-  // Flat list van alle stock locaties
+  let h = '';
+
+  // ── SECTIE 1: PLAATSEN ──
+  h += '<div class="section-hdr">📍 Plaatsen (DAHL volgorde)</div>';
+
+  const byPlaats = [...data].sort((a, b) => {
+    const na = parseInt((a.plaats || '').replace(/\D/g, '')) || 999;
+    const nb = parseInt((b.plaats || '').replace(/\D/g, '')) || 999;
+    return na - nb;
+  });
+
+  byPlaats.forEach(d => {
+    const cls = d.geteld > 0 ? ' done' : '';
+    const stockTxt = d.locaties.length
+      ? d.locaties.map(l => 'R' + l.rij + 'P' + l.pos).join(', ')
+      : '';
+    const meta = [stockTxt, d.aantal_bakken + ' bakken'].filter(Boolean).join(' · ');
+    h += '<div class="row' + cls + '" onclick="openItem(' + d.id + ')">' +
+      '<div class="badge green">' + esc(d.plaats) + '</div>' +
+      '<div class="cell">' +
+        '<div class="cell-name">' + esc(d.naam) + '</div>' +
+        '<div class="cell-meta">' + meta + '</div>' +
+      '</div>' +
+      '<div class="cell-count' + (d.geteld ? '' : ' zero') + '">' + (d.geteld || '–') + '</div>' +
+    '</div>';
+  });
+
+  // ── SECTIE 2: STOCK LOCATIES ──
+  h += '<div class="section-hdr">📦 Stock Locaties (rij volgorde)</div>';
+
   const entries = [];
   data.forEach(d => {
     if (!d.locaties.length) return;
@@ -326,42 +351,43 @@ function renderLoc(data) {
   });
   entries.sort((a, b) => a.rij - b.rij || a.pos - b.pos);
 
-  // Groepeer per rij
-  const groups = {};
-  entries.forEach(e => {
-    (groups[e.rij] = groups[e.rij] || []).push(e);
-  });
-
-  let h = '';
-  Object.keys(groups).sort((a,b) => a-b).forEach(rij => {
-    h += `<div class="group-hdr">Rij ${rij}</div>`;
-    groups[rij].forEach(e => {
-      const cls = e.d.geteld > 0 ? ' done' : '';
-      h += `<div class="row${cls}" onclick="openItem(${e.d.id})">
-        <div class="badge">R${e.rij} P${e.pos}</div>
-        <div class="cell">
-          <div class="cell-name">${esc(e.d.naam)}</div>
-          <div class="cell-meta">${e.d.plaats} · ${e.d.aantal_bakken} bakken</div>
-        </div>
-        <div class="cell-count${e.d.geteld ? '' : ' zero'}">${e.d.geteld || '–'}</div>
-      </div>`;
+  if (entries.length === 0) {
+    h += '<div style="padding:12px 10px;color:#aaa;font-style:italic;">Geen stock locaties gevonden</div>';
+  } else {
+    const groups = {};
+    entries.forEach(e => {
+      (groups[e.rij] = groups[e.rij] || []).push(e);
     });
-  });
 
-  // Zonder stock
-  const noStock = data.filter(d => !d.locaties.length);
+    Object.keys(groups).sort((a, b) => a - b).forEach(rij => {
+      h += '<div class="group-hdr">Rij ' + rij + '</div>';
+      groups[rij].forEach(e => {
+        const cls = e.d.geteld > 0 ? ' done' : '';
+        h += '<div class="row' + cls + '" onclick="openItem(' + e.d.id + ')">' +
+          '<div class="badge stock">R' + e.rij + ' P' + e.pos + '</div>' +
+          '<div class="cell">' +
+            '<div class="cell-name">' + esc(e.d.naam) + '</div>' +
+            '<div class="cell-meta">' + e.d.plaats + ' · ' + e.d.aantal_bakken + ' bakken</div>' +
+          '</div>' +
+          '<div class="cell-count' + (e.d.geteld ? '' : ' zero') + '">' + (e.d.geteld || '–') + '</div>' +
+        '</div>';
+      });
+    });
+  }
+
+  var noStock = data.filter(d => !d.locaties.length);
   if (noStock.length) {
     h += '<div class="group-hdr">Geen stock locatie</div>';
     noStock.forEach(d => {
       const cls = d.geteld > 0 ? ' done' : '';
-      h += `<div class="row${cls}" onclick="openItem(${d.id})">
-        <div class="badge grey">–</div>
-        <div class="cell">
-          <div class="cell-name">${esc(d.naam)}</div>
-          <div class="cell-meta">${d.plaats} · ${d.aantal_bakken} bakken</div>
-        </div>
-        <div class="cell-count zero">–</div>
-      </div>`;
+      h += '<div class="row' + cls + '" onclick="openItem(' + d.id + ')">' +
+        '<div class="badge grey">–</div>' +
+        '<div class="cell">' +
+          '<div class="cell-name">' + esc(d.naam) + '</div>' +
+          '<div class="cell-meta">' + d.plaats + ' · ' + d.aantal_bakken + ' bakken</div>' +
+        '</div>' +
+        '<div class="cell-count zero">–</div>' +
+      '</div>';
     });
   }
 
@@ -369,29 +395,25 @@ function renderLoc(data) {
 }
 
 function renderNaam(data) {
-  const sorted = [...data].sort((a,b) => a.naam.localeCompare(b.naam));
+  const sorted = [...data].sort((a, b) => a.naam.localeCompare(b.naam));
   let h = '';
   sorted.forEach(d => {
-    const num = d.plaats.replace(/^DAHL0*/, '');
     const cls = d.geteld > 0 ? ' done' : '';
     const stockTxt = d.locaties.length
-      ? d.locaties.map(l => `R${l.rij} P${l.pos}`).join(', ')
+      ? d.locaties.map(l => 'R' + l.rij + 'P' + l.pos).join(', ')
       : 'Geen stock';
-    h += `<div class="row${cls}" onclick="openItem(${d.id})">
-      <div class="badge green">${num}</div>
-      <div class="cell">
-        <div class="cell-name">${esc(d.naam)}</div>
-        <div class="cell-meta">${stockTxt} · ${d.aantal_bakken} bakken</div>
-      </div>
-      <div class="cell-count${d.geteld ? '' : ' zero'}">${d.geteld || '–'}</div>
-    </div>`;
+    h += '<div class="row' + cls + '" onclick="openItem(' + d.id + ')">' +
+      '<div class="badge green">' + esc(d.plaats) + '</div>' +
+      '<div class="cell">' +
+        '<div class="cell-name">' + esc(d.naam) + '</div>' +
+        '<div class="cell-meta">' + stockTxt + ' · ' + d.aantal_bakken + ' bakken</div>' +
+      '</div>' +
+      '<div class="cell-count' + (d.geteld ? '' : ' zero') + '">' + (d.geteld || '–') + '</div>' +
+    '</div>';
   });
   document.getElementById('naam').innerHTML = h;
 }
 
-// =============================================
-// DETAIL PANEL
-// =============================================
 function openItem(id) {
   cur = allData.find(d => d.id === id);
   if (!cur) return;
@@ -399,15 +421,15 @@ function openItem(id) {
 
   document.getElementById('pNaam').textContent = cur.naam;
   document.getElementById('pTags').innerHTML =
-    `<span class="p-tag g">${cur.plaats}</span>` +
-    `<span class="p-tag">${cur.aantal_bakken} bakken</span>` +
-    `<span class="p-tag">${cur.aantal_per_bak}/bak</span>`;
+    '<span class="p-tag g">' + cur.plaats + '</span>' +
+    '<span class="p-tag">' + cur.aantal_bakken + ' bakken</span>' +
+    '<span class="p-tag">' + cur.aantal_per_bak + '/bak</span>';
 
   let sg = '';
   if (cur.locaties.length) {
     sg = '<div class="stock-grid">';
     cur.locaties.forEach(l => {
-      sg += `<div class="stock-cell"><div class="r">Rij ${l.rij}</div><div class="p">Positie ${l.pos}</div></div>`;
+      sg += '<div class="stock-cell"><div class="r">Rij ' + l.rij + '</div><div class="p">Positie ' + l.pos + '</div></div>';
     });
     sg += '</div>';
   } else {
@@ -424,9 +446,6 @@ function closePanel() {
   cur = null;
 }
 
-// =============================================
-// TELLER
-// =============================================
 function adj(d) {
   sessCnt = Math.max(0, sessCnt + d);
   updTeller();
@@ -441,19 +460,18 @@ function updTeller() {
   document.getElementById('tNum').textContent = sessCnt;
   const s = cur ? cur.geteld : 0;
   document.getElementById('tSaved').textContent = s
-    ? `In database: ${s}` : 'Nog niets opgeslagen';
+    ? 'In database: ' + s : 'Nog niets opgeslagen';
 }
 
 async function saveCnt() {
   if (!cur || sessCnt === 0) { toast('Niets om op te slaan'); return; }
 
-  const btn = document.getElementById('saveBtn');
+  var btn = document.getElementById('saveBtn');
   btn.textContent = 'Opslaan...';
   btn.disabled = true;
 
-  const newTotal = (cur.geteld || 0) + sessCnt;
+  var newTotal = (cur.geteld || 0) + sessCnt;
 
-  // Update dahlias tabel
   const { error: updErr } = await db
     .from('dahlias')
     .update({ geteld: newTotal })
@@ -466,13 +484,11 @@ async function saveCnt() {
     return;
   }
 
-  // Log in tellingen tabel
   await db.from('tellingen').insert({
     dahlia_id: cur.id,
     aantal: sessCnt
   });
 
-  // Update lokaal
   cur.geteld = newTotal;
   sessCnt = 0;
   updTeller();
@@ -480,12 +496,9 @@ async function saveCnt() {
 
   btn.textContent = 'Opslaan';
   btn.disabled = false;
-  toast(`✅ Opgeslagen! Totaal: ${newTotal}`);
+  toast('✅ Opgeslagen! Totaal: ' + newTotal);
 }
 
-// =============================================
-// SEARCH
-// =============================================
 document.getElementById('search').addEventListener('input', e => {
   const q = e.target.value.toLowerCase().trim();
   if (!q) { render(allData); return; }
@@ -497,9 +510,6 @@ document.getElementById('search').addEventListener('input', e => {
   render(f);
 });
 
-// =============================================
-// TABS
-// =============================================
 function switchTab(id) {
   document.querySelectorAll('.tab').forEach((t, i) => {
     t.classList.toggle('active', i === (id === 'loc' ? 0 : 1));
@@ -508,19 +518,15 @@ function switchTab(id) {
   document.getElementById(id).classList.add('active');
 }
 
-// =============================================
-// HELPERS
-// =============================================
-function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
 function toast(msg) {
-  const t = document.getElementById('toast');
+  var t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// GO
 load();
 </script>
 </body>
